@@ -2,6 +2,8 @@
 
 A very simple automated Certificate Authority. Such CA is useful on auto provisioned clusters secured by client certificates, like [etcd](https://coreos.com/etcd/) and [Kubernetes](http://kubernetes.io/).
 
+[![Docker Repository on Quay](https://quay.io/repository/jcmoraisjr/simple-ca/status "Docker Repository on Quay")](https://quay.io/repository/jcmoraisjr/simple-ca)
+
 # Usage
 
 Run the CA:
