@@ -11,6 +11,7 @@ RUN cd /etc/lighttpd/\
 
 COPY lighttpd/ /etc/lighttpd/
 COPY index.cgi /var/www/localhost/htdocs/
+COPY ca.cnf /srv/
 COPY start.sh /
 
 RUN chmod +x /start.sh /var/www/localhost/htdocs/index.cgi\

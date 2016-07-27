@@ -25,29 +25,30 @@ cd "$CA_DIR"
 #1 Output
 sign() {
   local paramOutput=$1
+  unset cn ip ns
   for param in ${QUERY_STRING//&/ }; do
     varname="${param%%=*}"
     varvalue="${param#*=}"
     case "$varname" in
+      cn) cn=$varvalue ;;
       ip) ip=$varvalue ;;
       ns) ns=$varvalue ;;
     esac
   done
 
-  # TODO concurrency on serial.txt 
-  openssl x509 \
-    -req \
-    -sha256 \
+  [ -z "$cn" ] && die "cn= is mandatory"
+
+  # TODO concurrency on database and serial
+  openssl ca \
+    -batch \
+    -config ca.cnf \
+    -subj "/CN=$cn" \
     -in <(cat -) \
-    -CA ca.pem \
-    -CAkey ca-key.pem \
-    -set_serial 0x$(<serial.txt) \
     -out "$paramOutput" \
-    -days 1826 \
     -extfile <(
       if [ -n "$ip" ] || [ -n "$ns" ]; then
         echo "subjectAltName = @alt_names"
-        echo "[alt_names]"
+        echo "[ alt_names ]"
         i=1
         for alt_ip in ${ip//,/ }; do
           echo "IP.${i} = $alt_ip"
@@ -59,9 +60,7 @@ sign() {
           ((i++))
         done
       fi
-    ) &&\
-  printf '%04X' $((0x$(<serial.txt)+1)) > serial.txt.$$ &&\
-  mv -f serial.txt.$$ serial.txt
+    )
 }
 
 case "$PATH_INFO" in

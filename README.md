@@ -13,11 +13,13 @@ Run the CA:
 Create a private key and certificate request:
 
     openssl genrsa -out host-key.pem 2048
-    openssl req -new -key host-key.pem -out host.csr -subj "/CN=my-host"
+    openssl req -new -key host-key.pem -out host.csr -subj "/"
 
 Sign the certificate -- change `localhost` to the IP if Docker Server is on a VM - eg Docker Machine:
 
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign"
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host"
+
+Since 0.2 the `cn` parameter is mandatory.
 
 Check the certificate:
 
@@ -25,10 +27,10 @@ Check the certificate:
 
 Using alternative IP, NS or both:
 
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?ip=10.0.0.1"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?ip=10.0.0.1,192.168.0.1"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?ns=localhost,my-host.localdomain"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?ip=10.0.0.1&ns=my-host.localdomain"
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1"
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1,192.168.0.1"
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ns=localhost,my-host.localdomain"
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1&ns=my-host.localdomain"
 
 # Deploy
 

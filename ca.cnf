@@ -1,0 +1,27 @@
+[ ca ]
+default_ca     = CA_default
+
+[ CA_default ]
+dir            = .
+database       = $dir/index.txt
+new_certs_dir  = $dir/newcerts
+
+certificate    = $dir/ca.pem
+serial         = $dir/serial
+private_key    = $dir/private/ca-key.pem
+RANDFILE       = $dir/private/.rand
+
+default_days   = 365
+default_crl_days = 30
+default_md     = sha256
+
+policy         = policy_any
+email_in_dn    = no
+unique_subject = no
+
+name_opt       = ca_default
+cert_opt       = ca_default
+copy_extensions = none
+
+[ policy_any ]
+commonName = optional
