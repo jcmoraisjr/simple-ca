@@ -43,6 +43,7 @@ sign() {
     -batch \
     -config ca.cnf \
     -subj "/CN=$cn" \
+    -notext \
     -in <(cat -) \
     -out "$paramOutput" \
     -extfile <(
