@@ -38,7 +38,8 @@ sign() {
 
   [ -z "$cn" ] && die "cn= is mandatory"
 
-  # TODO concurrency on database and serial
+  exec 100<ca.cnf && \
+  flock 100 && \
   openssl ca \
     -batch \
     -config ca.cnf \
