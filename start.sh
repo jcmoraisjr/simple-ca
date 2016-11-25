@@ -53,5 +53,4 @@ if [ ! -f serial ]; then
     echo -n "0001" > serial
 fi
 
-cd /
 exec lighttpd -f /etc/lighttpd/lighttpd.conf -D

@@ -38,6 +38,7 @@ sign() {
 
   [ -z "$cn" ] && die "cn= is mandatory"
 
+  export RANDFILE=.rnd
   exec 100<ca.cnf && \
   flock 100 && \
   openssl ca \
@@ -48,6 +49,9 @@ sign() {
     -in <(cat -) \
     -out "$paramOutput" \
     -extfile <(
+      echo "basicConstraints = CA:FALSE"
+      echo "keyUsage = nonRepudiation, digitalSignature, keyEncipherment"
+      echo "extendedKeyUsage = clientAuth$([ -n "$ip$ns" ] && echo ", serverAuth")"
       if [ -n "$ip" ] || [ -n "$ns" ]; then
         echo "subjectAltName = @alt_names"
         echo "[ alt_names ]"

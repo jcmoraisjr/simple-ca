@@ -16,8 +16,8 @@ COPY start.sh /
 
 RUN chmod +x /start.sh /var/www/localhost/htdocs/index.cgi\
  && mkdir -p /ssl\
- && chown lighttpd:lighttpd /run /ssl
+ && chown lighttpd:lighttpd /run /ssl /var/www/localhost/htdocs
 
+WORKDIR /var/www/localhost/htdocs
 USER lighttpd
-
 CMD ["/start.sh"]
