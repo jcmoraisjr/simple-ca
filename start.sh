@@ -22,7 +22,7 @@ fi
 cd "$CA_DIR"
 
 if [ ! -f ca.cnf ]; then
-    cp /srv/ca.cnf .
+    sed "s/{{CRT_DAYS}}/${CRT_DAYS:-365}/" /srv/ca.cnf > ca.cnf
 fi
 
 mkdir -p private newcerts
@@ -41,7 +41,7 @@ if [ ! -f ca.pem ] || [ ! -f private/ca-key.pem ]; then
     info "CA cert or private key not found, building..."
     openssl genrsa -out private/ca-key.pem 2048
     openssl req \
-      -x509 -new -nodes -days 3652 -subj "/CN=$CA_CN" \
+      -x509 -new -nodes -days ${CA_DAYS:-3652} -subj "/CN=$CA_CN" \
       -key private/ca-key.pem -out ca.pem
     info "CA successfully built"
 else

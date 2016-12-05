@@ -25,7 +25,7 @@ cd "$CA_DIR"
 #1 Output
 sign() {
   local paramOutput=$1
-  unset cn ip ns
+  unset cn ip ns days
   for param in ${QUERY_STRING//&/ }; do
     varname="${param%%=*}"
     varvalue="${param#*=}"
@@ -33,6 +33,7 @@ sign() {
       cn) cn=$varvalue ;;
       ip) ip=$varvalue ;;
       ns) ns=$varvalue ;;
+      days) days=$varvalue ;;
     esac
   done
 
@@ -46,6 +47,7 @@ sign() {
     -config ca.cnf \
     -subj "/CN=$cn" \
     -notext \
+    $([ -n "$days" ] && echo "-days $days" || :) \
     -in <(cat -) \
     -out "$paramOutput" \
     -extfile <(

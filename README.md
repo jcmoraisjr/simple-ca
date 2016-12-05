@@ -32,6 +32,17 @@ Using alternative IP, NS or both:
     curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ns=localhost,my-host.localdomain"
     curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1&ns=my-host.localdomain"
 
+Using alternative number of days:
+
+    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&days=30"
+
+# Options
+
+The following environment variables may be defined:
+
+* `CRT_DAYS`: default number of days to certify signed certificates, defaults to 365, can be changed per signed certificate
+* `CA_DAYS`: number of days to certify the CA certificate, defaults to 3652 (10 years).
+
 # Deploy
 
 * Mount the `/ssl` directory to ensure that nothing will be lost if the container is recreated

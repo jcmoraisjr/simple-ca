@@ -11,7 +11,7 @@ serial         = $dir/serial
 private_key    = $dir/private/ca-key.pem
 RANDFILE       = $dir/private/.rand
 
-default_days   = 365
+default_days   = {{CRT_DAYS}}
 default_crl_days = 30
 default_md     = sha256
 
