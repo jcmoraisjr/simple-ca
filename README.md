@@ -12,44 +12,51 @@ Run the CA:
 
 Create a private key and certificate request:
 
-    openssl genrsa -out host-key.pem 2048
-    openssl req -new -key host-key.pem -out host.csr -subj "/"
+    openssl req -new -newkey rsa:2048 -keyout host-key.pem -nodes -out host.csr -subj "/"
 
 Sign the certificate -- change `localhost` to the IP if Docker Server is on a VM - eg Docker Machine:
 
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host"
-
-Since 0.2 the `cn` parameter is mandatory.
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&ns=my-host.localdomain"
 
 Check the certificate:
 
     openssl x509 -noout -text -in host.pem
 
+One liner key and cert:
+
+    openssl req -new -newkey rsa:2048 -keyout host-key.pem -nodes -subj "/" | \
+      curl -fk --data-binary @- -o host.pem "https://localhost/sign?cn=my-host&ns=my-host.localdomain"
+
 Using alternative IP, NS or both:
 
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1,192.168.0.1"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ns=localhost,my-host.localdomain"
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1&ns=my-host.localdomain"
+**Note:** If neither IP nor NS is provided, a client certificate would be generated. Always provide IP, NS or both for server certificates.
+
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1"
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1,192.168.0.1"
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&ns=localhost,my-host.localdomain"
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&ip=10.0.0.1&ns=my-host.localdomain"
 
 Using alternative number of days:
 
-    curl --insecure -XPOST -d"$(<host.csr)" -o host.pem "https://localhost/sign?cn=my-host&days=30"
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&days=30"
 
 # Options
 
-The following environment variables may be defined:
+The following optional environment variables may be defined:
 
 * `CRT_DAYS`: default number of days to certify signed certificates, defaults to 365, can be changed per signed certificate
-* `CA_DAYS`: number of days to certify the CA certificate, defaults to 3652 (10 years).
+* `CA_DAYS`: number of days to certify the CA certificate, defaults to 3652 (10 years)
+* `CA_DIR`: path to `ca.pem` and `private/ca-key.pem` used to sign certificates, defaults to `/ssl/ca`. A new cert and key will be created if not found
+* `CA_CN`: Aa self generated CA will use `CA_CN` as its common name, defaults to `my-ca`
+* `CERT_TLS`: TLS certificate and key file used by web server to provide https, defaults to `/ssl/www/localhost.pem`. If not found, CA itself will sign a certificate
+* `CERT_TLS_DNS`: name server of the CA server, used on auto generated TLS certificate. At least one of `CERT_TLS_DNS` or `CERT_TLS_IP` should be provided
+* `CERT_TLS_IP`: public IP of the CA server, used on auto generated TLS certificate. At least one of `CERT_TLS_DNS` or `CERT_TLS_IP` should be provided
+* `CERT_TLS_DAYS`: number of days to certify the CA server cert, used on auto generated TLS certificate, defaults to 365 days
 
 # Deploy
 
 * Mount the `/ssl` directory to ensure that nothing will be lost if the container is recreated
 * The external directory should be owned by container's `lighttpd` user (uid 100)
-* Point `CERT_TLS` env var to the certificate and key used by the web server, otherwise a self signed certificate will be used
-* Point `CA_DIR` to the directory with your own `ca.pem` and `ca-key.pem`, otherwise a new cert and key will be generated
-* A self generated CA will use `CA_CN` as its common name
 
 This systemd unit has the most common configuration:
 
@@ -66,8 +73,8 @@ This systemd unit has the most common configuration:
       --name simple-ca \
       -p 80:8080 \
       -p 443:8443 \
-      -e CERT_TLS=/ssl/www/caserver.pem \
-      -e CA_CN=mycompany-ca \
+      -e CERT_TLS_DNS=ca.mycompany.com \
+      -e CA_CN=MyCompany-CA \
       -v /var/lib/simple-ca/ssl:/ssl \
       quay.io/jcmoraisjr/simple-ca:latest
     RestartSec=10s
