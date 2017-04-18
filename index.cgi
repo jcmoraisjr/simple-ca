@@ -25,7 +25,7 @@ cd "$CA_DIR"
 #1 Output
 sign() {
   local paramOutput=$1
-  unset cn ip ns days
+  unset cn ip ns days gp dn
   for param in ${QUERY_STRING//&/ }; do
     varname="${param%%=*}"
     varvalue="${param#*=}"
@@ -34,10 +34,17 @@ sign() {
       ip) ip=$varvalue ;;
       ns) ns=$varvalue ;;
       days) days=$varvalue ;;
+      gp) gp=$varvalue ;;
+      dn) dn=$varvalue ;;
     esac
   done
 
-  [ -z "$cn" ] && die "cn= is mandatory"
+  [ -z "$cn" -a -z "$dn" ] && die "Either cn= or dn= is mandatory"
+  [ -n "$cn" -a -n "$dn" ] && die "Pick either cn or dn"
+  [ -z "$dn" ] && dn="/CN=$cn$( for i in ${gp//,/ }; do echo -n "/O=$i"; done)"
+  regex=${DN_REGEX:-"^/CN=[-_:a-zA-Z0-9]+(/O=[-_:a-zA-Z0-9]+)*$"}
+  [[ ! $dn =~ $regex ]] && die "The dn $dn doesn't match $regex"
+
 
   export RANDFILE=.rnd
   exec 100<ca.cnf && \
@@ -45,7 +52,7 @@ sign() {
   openssl ca \
     -batch \
     -config ca.cnf \
-    -subj "/CN=$cn" \
+    -subj "$dn" \
     -notext \
     $([ -n "$days" ] && echo "-days $days" || :) \
     -in <(cat -) \
