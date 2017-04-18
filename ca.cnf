@@ -25,3 +25,4 @@ copy_extensions = none
 
 [ policy_any ]
 commonName = optional
+organizationName = optional
