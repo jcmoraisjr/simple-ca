@@ -1,5 +1,5 @@
-FROM alpine:3.4
-RUN apk add --no-cache bash openssl lighttpd
+FROM alpine:3.5
+RUN apk upgrade --no-cache && apk add --no-cache bash openssl lighttpd
 
 ENV CERT_TLS=/ssl/www/localhost.pem
 ENV CA_DIR=/ssl/ca

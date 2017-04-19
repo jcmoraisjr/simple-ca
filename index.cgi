@@ -42,7 +42,7 @@ sign() {
   [ -z "$cn" -a -z "$dn" ] && die "Either cn= or dn= is mandatory"
   [ -n "$cn" -a -n "$dn" ] && die "Pick either cn or dn"
   [ -z "$dn" ] && dn="/CN=$cn$( for i in ${gp//,/ }; do echo -n "/O=$i"; done)"
-  regex=${DN_REGEX:-"^/CN=[-_:a-zA-Z0-9]+(/O=[-_:a-zA-Z0-9]+)*$"}
+  regex=${DN_REGEX:-"^/CN=[-_.:a-zA-Z0-9]+(/O=[-_:a-zA-Z0-9]+)*$"}
   [[ ! $dn =~ $regex ]] && die "The dn $dn doesn't match $regex"
 
 
