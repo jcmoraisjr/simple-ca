@@ -24,5 +24,9 @@ cert_opt       = ca_default
 copy_extensions = none
 
 [ policy_any ]
-commonName = optional
-organizationName = optional
+countryName            = optional
+stateOrProvinceName    = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
