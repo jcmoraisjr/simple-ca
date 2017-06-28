@@ -1,11 +1,16 @@
 #!/bin/bash
 set -e
 
+d() {
+  date -u '+%Y/%m/%d %H:%M:%S GMT'
+}
+
 die() {
   echo "HTTP/1.1 400 Bad Request"
   echo "Content-Type: text/plain"
   echo
   echo "$*"
+  echo "$*" | sed "s;^;[$(d)] ERROR - ;" >&2
   exit 1  
 }
 
@@ -15,6 +20,10 @@ notFound() {
   echo
   echo "404 Not Found"
   exit 1  
+}
+
+info() {
+  echo "[$(d)] $*" >&2
 }
 
 if [ ! -d "$CA_DIR" ]; then
@@ -83,6 +92,7 @@ case "$PATH_INFO" in
     CRT=/tmp/crt-$$.pem
     trap "rm -f $CRT" EXIT
     err=$(sign "$CRT" 2>&1) || die "$err"
+    info "New cert: $(openssl x509 -noout -subject -in $CRT)"
     out=$CRT
     ;;
   /ca)
