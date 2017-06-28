@@ -2,7 +2,7 @@
 set -e
 
 die() {
-  echo "HTTP/1.1 500 Internal Server Error"
+  echo "HTTP/1.1 400 Bad Request"
   echo "Content-Type: text/plain"
   echo
   echo "$*"
