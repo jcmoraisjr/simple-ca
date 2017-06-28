@@ -25,23 +25,26 @@ cd "$CA_DIR"
 #1 Output
 sign() {
   local paramOutput=$1
-  unset cn ip ns days gp dn
+  unset dn cn ip ns o days
+  # No decode, no space from QUERY_STRING
   for param in ${QUERY_STRING//&/ }; do
     varname="${param%%=*}"
     varvalue="${param#*=}"
     case "$varname" in
+      dn) dn=$varvalue ;;
       cn) cn=$varvalue ;;
       ip) ip=$varvalue ;;
       ns) ns=$varvalue ;;
+      o) o=$varvalue ;;
       days) days=$varvalue ;;
-      gp) gp=$varvalue ;;
-      dn) dn=$varvalue ;;
     esac
   done
 
   [ -n "$cn" -a -n "$dn" ] && die "Pick either cn or dn"
-  [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn$( for i in ${gp//,/ }; do echo -n "/O=$i"; done)"
-
+  [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn"
+  for vo in ${o//,/ }; do
+    dn+="/O=$vo"
+  done
 
   export RANDFILE=.rnd
   exec 100<ca.cnf && \
