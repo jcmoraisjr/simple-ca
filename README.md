@@ -22,10 +22,25 @@ Check the certificate:
 
     openssl x509 -noout -text -in host.pem
 
+Using `dn` instead `cn`:
+
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?dn=/CN=my-host&ns=my-host.localdomain"
+
+Shortcut to organizationName and `dn` syntax - Note that `ca.cnf` changed on `0.7`,
+you should update or remove `<local-ca-dir>/ssl/ca/ca.cnf` before restart `simple-ca`:
+
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?cn=my-host&o=company&ns=my-host.localdomain"
+    curl -fk --data-binary @host.csr -o host.pem "https://localhost/sign?dn=/CN=my-host/O=company&ns=my-host.localdomain"
+
 One liner key and cert:
 
     openssl req -new -newkey rsa:2048 -keyout host-key.pem -nodes -subj "/" | \
       curl -fk --data-binary @- -o host.pem "https://localhost/sign?cn=my-host&ns=my-host.localdomain"
+
+Using subject from the request - `cn` is optional since `0.7`:
+
+    openssl req -new -newkey rsa:2048 -keyout host-key.pem -nodes -subj "/CN=my-host" | \
+      curl -fk --data-binary @- -o host.pem "https://localhost/sign?ns=my-host.localdomain"
 
 Using alternative IP, NS or both:
 
