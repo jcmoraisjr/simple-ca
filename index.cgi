@@ -52,9 +52,11 @@ sign() {
       ns) ns=$varvalue ;;
       o) o=$varvalue ;;
       days) days=$varvalue ;;
+      token) token=$varvalue ;;
     esac
   done
 
+  [ -n "$TOKEN" -a "$TOKEN" != "$token" ] && echo "Invalid token" && return 1
   [ -n "$cn" -a -n "$dn" ] && echo "Pick either cn or dn" && return 1
   [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn"
   for vo in ${o//,/ }; do
