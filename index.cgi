@@ -5,7 +5,7 @@ d() {
   date -u '+%Y/%m/%d %H:%M:%S GMT'
 }
 
-die() {
+badRequest() {
   echo "HTTP/1.1 400 Bad Request"
   echo "Content-Type: text/plain"
   echo
@@ -22,14 +22,20 @@ notFound() {
   exit 1  
 }
 
+serverError() {
+  echo "HTTP/1.1 500 Internal Server Error"
+  echo "Content-Type: text/plain"
+  echo
+  echo "$*"
+  echo "$*" | sed "s;^;[$(d)] ERROR - ;" >&2
+  exit 1  
+}
+
 info() {
   echo "[$(d)] $*" >&2
 }
 
-if [ ! -d "$CA_DIR" ]; then
-  die "CA not found"
-fi
-cd "$CA_DIR"
+cd "$CA_DIR" || serverError "CA not found"
 
 #1 Output
 sign() {
@@ -49,7 +55,7 @@ sign() {
     esac
   done
 
-  [ -n "$cn" -a -n "$dn" ] && die "Pick either cn or dn"
+  [ -n "$cn" -a -n "$dn" ] && echo "Pick either cn or dn" && return 1
   [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn"
   for vo in ${o//,/ }; do
     dn+="/O=$vo"
@@ -91,7 +97,7 @@ case "$PATH_INFO" in
   /sign)
     CRT=/tmp/crt-$$.pem
     trap "rm -f $CRT" EXIT
-    err=$(sign "$CRT" 2>&1) || die "$err"
+    err=$(sign "$CRT" 2>&1) || badRequest "$err"
     info "New cert: $(openssl x509 -noout -subject -in $CRT)"
     out=$CRT
     ;;
