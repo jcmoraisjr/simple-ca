@@ -17,14 +17,6 @@ mkdir -p private newcerts
 chmod 700 private
 touch index.txt
 
-# 0.1 to 0.2 migrations
-if [ -f ca-key.pem ] && [ ! -f private/ca-key.pem ]; then
-    mv ca-key.pem private/ca-key.pem
-fi
-if [ -f serial.txt ] && [ ! -f serial ]; then
-    mv serial.txt serial
-fi
-
 if [ ! -f ca.pem ] || [ ! -f private/ca-key.pem ]; then
     info "CA cert or private key not found, building..."
     openssl genrsa -out private/ca-key.pem 2048
