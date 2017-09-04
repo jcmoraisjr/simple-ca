@@ -58,7 +58,7 @@ sign() {
     esac
   done
 
-  checktoken "$token" || return 1
+  [ -n "$TOKEN" ] && ! checktoken "$token" && return 1
   [ -n "$cn" -a -n "$dn" ] && echo "Pick either cn or dn" && return 1
 
   [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn"
