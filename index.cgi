@@ -26,6 +26,18 @@ info() {
   echo "[$(d)] $*" >&2
 }
 
+#1 token
+checktoken() {
+  IFS=":" read -r algo hash <<<"$TOKEN"
+  [ -z "$hash" ] && echo "Hash algorithm wasn't provided" && return 1
+  case "$algo" in
+    md5|sha1|sha256|sha512) check=$(echo -n "$1" | openssl dgst -$algo -r | cut -d' ' -f1) ;;
+    *) echo "Unsupported algorithm: $algo" && return 1 ;;
+  esac
+  [ "$check" != "$hash" ] && echo "Invalid token" && return 1
+  return 0
+}
+
 ### sign() exec as a subprocess - do not write HTTP headers
 #1 Output
 sign() {
@@ -46,8 +58,9 @@ sign() {
     esac
   done
 
-  [ -n "$TOKEN" -a "$TOKEN" != "$token" ] && echo "Invalid token" && return 1
+  checktoken "$token" || return 1
   [ -n "$cn" -a -n "$dn" ] && echo "Pick either cn or dn" && return 1
+
   [ -z "$dn" -a -n "$cn" ] && dn="/CN=$cn"
   for vo in ${o//,/ }; do
     dn+="/O=$vo"
@@ -87,8 +100,8 @@ sign() {
 
 # breakdown /<ca_method>[/<ca_id>]
 IFS="/" read -r ca_method ca_id <<<"${PATH_INFO#/}"
-ca_id="${ca_id:-default}"
-grep -Eq '^[a-z0-9_]+$' <<<"$ca_id" || notFound
+ca_id="${ca_id:-$CA_DEFAULT}"
+grep -Eq ",${ca_id}," <<<",${CA_LIST}," || notFound
 cd "$CA_DIR/$ca_id" 2>/dev/null || notFound
 case "$ca_method" in
   sign)

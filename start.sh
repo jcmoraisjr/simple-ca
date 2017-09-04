@@ -5,8 +5,9 @@ info() {
     echo "[$(date -u '+%Y/%m/%d %H:%M:%S GMT')] $*"
 }
 
-CA_LIST="${CA_LIST:-default}"
-if ! grep -Eq '^([a-z0-9_]+,)*[a-z0-9_]+$' <<<"$CA_LIST"; then
+if ! grep -Eq '^([a-z0-9_]+,)+[a-z0-9_]+$' <<<"${CA_DEFAULT},${CA_LIST}"; then
+    echo "Current CA_DEFAULT..: $CA_DEFAULT"
+    echo "Current CA_LIST.....: $CA_LIST"
     echo "Authority IDs must match [a-z0-9_]"
     exit 1
 fi
@@ -15,11 +16,11 @@ mkdir -p "${CERT_TLS%/*}" "$CA_DIR"
 cd "$CA_DIR"
 
 # 0.7 to 0.8 migration
-if [ -f ca.cnf ] && [ ! -d default ]; then
+if [ -f ca.cnf ] && [ ! -d "$CA_DEFAULT" ]; then
     echo "Moving to multi authority schema"
     mkdir _d
     mv .rnd [a-z]* _d || :
-    mv _d default
+    mv _d "$CA_DEFAULT"
 fi
 
 for ca_id in ${CA_LIST//,/ }; do
@@ -49,7 +50,7 @@ for ca_id in ${CA_LIST//,/ }; do
         openssl req \
             -x509 -new -nodes -days ${CA_DAYS_value:-3652} -subj "/CN=$CA_CN_value" \
             -key private/ca-key.pem -out ca.pem
-        info "CA successfully built"
+        info "CA \"$ca_id\" successfully built"
     else
         info "Found CA cert and private key: $PWD"
     fi
@@ -61,9 +62,9 @@ for ca_id in ${CA_LIST//,/ }; do
     cd ..
 done
 
-cd "${CA_LIST%%,*}"
 if [ ! -f "$CERT_TLS" ]; then
     info "$CERT_TLS not found, building new private key and certificate"
+    cd "$CA_DEFAULT" 2>/dev/null || cd "${CA_LIST%%,*}"
     trap "rm -f /tmp/key.pem /tmp/crt.pem" EXIT
     openssl req -new -newkey rsa:2048 -nodes -keyout /tmp/key.pem -subj "/" | openssl ca \
         -batch \
@@ -88,12 +89,12 @@ if [ ! -f "$CERT_TLS" ]; then
     rm -f /tmp/*.pem
     chmod 400 "$CERT_TLS"
     if [ -z "${CERT_TLS_DNS}" ] && [ -z "$CERT_TLS_IP" ]; then
-        info "Define CERT_TLS_DNS or CERT_TLS_IP (or both) to create a valid tls cert"
+        info "Define CERT_TLS_DNS or CERT_TLS_IP (or both) to create a valid TLS cert"
     fi
     info "New cert successfully built"
+    cd ..
 else
     info "Found TLS cert: $CERT_TLS"
 fi
-cd ..
 
 exec lighttpd -f /etc/lighttpd/lighttpd.conf -D
