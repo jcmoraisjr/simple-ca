@@ -5,34 +5,63 @@ info() {
     echo "[$(date -u '+%Y/%m/%d %H:%M:%S GMT')] $*"
 }
 
-mkdir -p "${CERT_TLS%/*}" "$CA_DIR"
+CA_LIST="${CA_LIST:-default}"
+if ! grep -Eq '^([a-z0-9_]+,)*[a-z0-9_]+$' <<<"$CA_LIST"; then
+    echo "Authority IDs must match [a-z0-9_]"
+    exit 1
+fi
 
+mkdir -p "${CERT_TLS%/*}" "$CA_DIR"
 cd "$CA_DIR"
 
-if [ ! -f ca.cnf ]; then
-    sed "s/{{CRT_DAYS}}/${CRT_DAYS:-365}/" /srv/ca.cnf > ca.cnf
+# 0.7 to 0.8 migration
+if [ -f ca.cnf ] && [ ! -d default ]; then
+    echo "Moving to multi authority schema"
+    mkdir _d
+    mv .rnd [a-z]* _d || :
+    mv _d default
 fi
 
-mkdir -p private newcerts
-chmod 700 private
-touch index.txt
+for ca_id in ${CA_LIST//,/ }; do
+    mkdir -p "$ca_id"
+    cd "$ca_id"
 
-if [ ! -f ca.pem ] || [ ! -f private/ca-key.pem ]; then
-    info "CA cert or private key not found, building..."
-    openssl genrsa -out private/ca-key.pem 2048
-    openssl req \
-        -x509 -new -nodes -days ${CA_DAYS:-3652} -subj "/CN=$CA_CN" \
-        -key private/ca-key.pem -out ca.pem
-    info "CA successfully built"
-else
-    info "Found CA cert and private key: $CA_DIR"
-fi
-chmod 400 private/ca-key.pem
+    CRT_DAYS_name="CRT_DAYS_$ca_id"
+    CRT_DAYS_value="${!CRT_DAYS_name:-$CRT_DAYS}"
 
-if [ ! -f serial ]; then
-    echo -n "0001" > serial
-fi
+    CA_DAYS_name="CA_DAYS_$ca_id"
+    CA_DAYS_value="${!CA_DAYS_name:-$CA_DAYS}"
 
+    CA_CN_name="CA_CN_$ca_id"
+    CA_CN_value="${!CA_CN_name:-$CA_CN}"
+
+    if [ ! -f ca.cnf ]; then
+        sed "s/{{CRT_DAYS}}/${CRT_DAYS_value:-365}/" /srv/ca.cnf > ca.cnf
+    fi
+
+    mkdir -p private newcerts
+    chmod 700 private
+    touch index.txt
+
+    if [ ! -f ca.pem ] || [ ! -f private/ca-key.pem ]; then
+        info "CA cert or private key not found, building CA \"$ca_id\"..."
+        openssl genrsa -out private/ca-key.pem 2048
+        openssl req \
+            -x509 -new -nodes -days ${CA_DAYS_value:-3652} -subj "/CN=$CA_CN_value" \
+            -key private/ca-key.pem -out ca.pem
+        info "CA successfully built"
+    else
+        info "Found CA cert and private key: $PWD"
+    fi
+    chmod 400 private/ca-key.pem
+
+    if [ ! -f serial ]; then
+        echo -n "0001" > serial
+    fi
+    cd ..
+done
+
+cd "${CA_LIST%%,*}"
 if [ ! -f "$CERT_TLS" ]; then
     info "$CERT_TLS not found, building new private key and certificate"
     trap "rm -f /tmp/key.pem /tmp/crt.pem" EXIT
@@ -65,5 +94,6 @@ if [ ! -f "$CERT_TLS" ]; then
 else
     info "Found TLS cert: $CERT_TLS"
 fi
+cd ..
 
 exec lighttpd -f /etc/lighttpd/lighttpd.conf -D

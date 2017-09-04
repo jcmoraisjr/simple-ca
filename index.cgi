@@ -22,21 +22,11 @@ notFound() {
   exit 1  
 }
 
-serverError() {
-  echo "HTTP/1.1 500 Internal Server Error"
-  echo "Content-Type: text/plain"
-  echo
-  echo "$*"
-  echo "$*" | sed "s;^;[$(d)] ERROR - ;" >&2
-  exit 1  
-}
-
 info() {
   echo "[$(d)] $*" >&2
 }
 
-cd "$CA_DIR" || serverError "CA not found"
-
+### sign() exec as a subprocess - do not write HTTP headers
 #1 Output
 sign() {
   local paramOutput=$1
@@ -95,15 +85,20 @@ sign() {
     )
 }
 
-case "$PATH_INFO" in
-  /sign)
+# breakdown /<ca_method>[/<ca_id>]
+IFS="/" read -r ca_method ca_id <<<"${PATH_INFO#/}"
+ca_id="${ca_id:-default}"
+grep -Eq '^[a-z0-9_]+$' <<<"$ca_id" || notFound
+cd "$CA_DIR/$ca_id" 2>/dev/null || notFound
+case "$ca_method" in
+  sign)
     CRT=/tmp/crt-$$.pem
     trap "rm -f $CRT" EXIT
     err=$(sign "$CRT" 2>&1) || badRequest "$err"
     info "New cert: $(openssl x509 -noout -subject -in $CRT)"
     out=$CRT
     ;;
-  /ca)
+  ca)
     out=ca.pem
     ;;
   *)
